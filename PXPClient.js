@@ -1,5 +1,5 @@
 /**
- * Pxp Rest client v2 
+ * Pxp Rest client v2
  * Connect with pxp framework php 7 version
  * @author : Jaime Rivera
  * @example
@@ -23,7 +23,7 @@
  *   .then(response => response.json())
  *   .then(data => console.log(data))
  *   .catch(err => console.log('error', err));
- * 
+ *
  */
 
 import md5 from 'crypto-js/md5';
@@ -58,9 +58,9 @@ class Encryption {
 
     /**
      * @link http://php.net/manual/en/function.openssl-get-cipher-methods.php Refer to available methods in PHP if we are working between JS & PHP encryption.
-     * @var string Cipher method. 
-     *              Recommended AES-128-CBC, AES-192-CBC, AES-256-CBC 
-     *              due to there is no `openssl_cipher_iv_length()` function in JavaScript 
+     * @var string Cipher method.
+     *              Recommended AES-128-CBC, AES-192-CBC, AES-256-CBC
+     *              due to there is no `openssl_cipher_iv_length()` function in JavaScript
      *              and all of these methods are known as 16 in iv_length.
      */
     get encryptMethod() {
@@ -70,7 +70,7 @@ class Encryption {
 
     /**
      * Decrypt string.
-     * 
+     *
      * @link https://stackoverflow.com/questions/41222162/encrypt-in-php-openssl-and-decrypt-in-javascript-cryptojs Reference.
      * @link https://stackoverflow.com/questions/25492179/decode-a-base64-string-using-cryptojs Crypto JS base64 encode/decode reference.
      * @param string encryptedString The encrypted string to be decrypt.
@@ -100,7 +100,7 @@ class Encryption {
 
     /**
      * Encrypt string.
-     * 
+     *
      * @link https://stackoverflow.com/questions/41222162/encrypt-in-php-openssl-and-decrypt-in-javascript-cryptojs Reference.
      * @link https://stackoverflow.com/questions/25492179/decode-a-base64-string-using-cryptojs Crypto JS base64 encode/decode reference.
      * @param string string The original string to be encrypt.
@@ -129,14 +129,90 @@ class Encryption {
     }// encrypt
 }
 
+import {Base64 as Base64V1} from './js/base64.js';
+import {mcrypt} from './js/mcrypt.js';
+
+class EncryptionV1 {
+
+    fnEncrypt($sValue, $sSecretKey) {
+
+        return Base64V1.encode(mcrypt.Encrypt($sValue, undefined, $sSecretKey, 'rijndael-256', 'ecb'));
+    }
+
+    uniqId(prefix, more_entropy) {
+        //  discuss at: http://phpjs.org/functions/uniqid/
+        // original by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+        //  revised by: Kankrelune (http://www.webfaktory.info/)
+        //        note: Uses an internal counter (in php_js global) to avoid collision
+        //        test: skip
+        //   example 1: uniqid();
+        //   returns 1: 'a30285b160c14'
+        //   example 2: uniqid('foo');
+        //   returns 2: 'fooa30285b1cd361'
+        //   example 3: uniqid('bar', true);
+        //   returns 3: 'bara20285b23dfd1.31879087'
+
+        if (typeof prefix === 'undefined') {
+            prefix = '';
+        }
+
+        let retId;
+        const formatSeed = function (seed, reqWidth) {
+            seed = parseInt(seed, 10)
+                .toString(16); // to hex str
+            if (reqWidth < seed.length) { // so long we split
+                return seed.slice(seed.length - reqWidth);
+            }
+            if (reqWidth > seed.length) { // so short we pad
+                return Array(1 + (reqWidth - seed.length))
+                    .join('0') + seed;
+            }
+            return seed;
+        };
+
+        // BEGIN REDUNDANT
+        if (!this.php_js) {
+            this.php_js = {};
+        }
+        // END REDUNDANT
+        if (!this.php_js.uniqidSeed) { // init seed with big random int
+            this.php_js.uniqidSeed = Math.floor(Math.random() * 0x75bcd15);
+        }
+        this.php_js.uniqidSeed++;
+
+        retId = prefix; // start with prefix, add current milliseconds hex string
+        retId += formatSeed(parseInt(new Date()
+            .getTime() / 1000, 10), 8);
+        retId += formatSeed(this.php_js.uniqidSeed, 5); // add seed hex string
+        if (more_entropy) {
+            // for more entropy we add a float lower to 10
+            retId += (Math.random() * 10)
+                .toFixed(8)
+                .toString();
+        }
+
+        return retId;
+    }
+
+    encrypt(user, pass) {
+        const prefix = this.uniqId('pxp');
+        this._user = this.fnEncrypt(prefix + '$$' + user, pass);
+
+        return this._user
+    }
+
+
+}
+
 export default class PXPClient {
     constructor(host, baseUrl = 'rest/', mode = 'same-origin', port = '80', protocol = 'http', backendRestVersion = 2) {
         this.host = host;
         this.baseUrl = baseUrl;
         this.port = port;
         this.protocol = protocol;
-        this.mode = mode;        
-        this._authenticated = sessionStorage.aut ?  JSON.parse(sessionStorage.aut) : false;               
+        this.mode = mode;
+        this.backendRestVersion = backendRestVersion;
+        this._authenticated = sessionStorage.aut ?  JSON.parse(sessionStorage.aut) : false;
         this.authenticatedListener = (val)  => {};
     }
 
@@ -145,75 +221,83 @@ export default class PXPClient {
     }
 
     set authenticated(val) {
-        this._authenticated = val;        
+        this._authenticated = val;
         if (!val) {
             delete sessionStorage.aut;
         } else {
             sessionStorage.aut = JSON.stringify(val);
         }
-        this.authenticatedListener(val);        
+        this.authenticatedListener(val);
     }
 
     onAuthStateChanged(callBack) {
         this.authenticatedListener = callBack;
-        this.authenticatedListener(this._authenticated); 
+        this.authenticatedListener(this._authenticated);
     }
 
     login(user, pass) {
-        this.prefix = uuidv4();
+
         this.user = user;
         const md5Pass = md5(pass).toString();
-        const enc = new Encryption();        
-        const encrypted = enc.encrypt(this.prefix + '$$' + this.user, md5Pass);                
+
+        let encrypted;
+        if(this.backendRestVersion === 1) {
+            const enc = new EncryptionV1();
+            encrypted = enc.encrypt(this.user, md5Pass);
+        } else {
+            this.prefix = uuidv4();
+            const enc = new Encryption();
+            encrypted = enc.encrypt(this.prefix + '$$' + this.user, md5Pass);
+        }
 
         const request = this.request({
-            url: 'seguridad/Auten/verificarCredenciales',            
+            url: 'seguridad/Auten/verificarCredenciales',
             headers: {
                 'Pxp-user': user,
-                'auth-version': 2,
+                'auth-version': this.backendRestVersion,
                 'Php-Auth-User': encrypted
-            }            
-        });
-        return fetch(request)
-            .then(response => response.json())
-            .then(data => {                   
-                const error = data.ROOT ? data.ROOT.error : false;
-                if (!error) {             
-                    this.authenticated = data;  
-                    //sessionStorage.aut = this.authenticated; 
-                }             
-                return data;
-            }) 
-            .catch(err => console.log('error', err));
-    }
-    logout() {        
-        const request = this.request({
-            url: 'seguridad/Auten/cerrarSesion'         
-            
+            }
         });
         return fetch(request)
             .then(response => response.json())
             .then(data => {
-                this.authenticated = false;                
+                const error = data.ROOT ? data.ROOT.error : false;
+                if (!error) {
+                    this.authenticated = data;
+                    //sessionStorage.aut = this.authenticated; 
+                }
                 return data;
-            }) 
+            })
+            .catch(err => console.log('error', err));
+    }
+    logout() {
+        const request = this.request({
+            url: 'seguridad/Auten/cerrarSesion'
+
+        });
+        return fetch(request)
+            .then(response => response.json())
+            .then(data => {
+                this.authenticated = false;
+                return data;
+            })
             .catch(err => console.log('error', err));
     }
     request(obj) {
-        const headers = obj.headers || {};         
+        const headers = obj.headers || {};
         let params = '';
         if (obj.params) {
-            params = this.encodeFormData(obj.params);            
+            params = this.encodeFormData(obj.params);
         }
         return new Request(
-            `${this.protocol}://${this.host}:${this.port}/${this.baseUrl}/${obj.url}`, 
+            `${this.protocol}://${this.host}:${this.port}/${this.baseUrl}/${obj.url}`,
             {
                 method: obj.method || 'POST',
                 mode: this.mode,
                 headers: {
                     ...headers,
                     'content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
-                }, 
+                },
                 cache: 'no-cache',
                 credentials: 'include',
                 body: params
@@ -230,7 +314,7 @@ export default class PXPClient {
                     this.authenticated = false;
                 }
                 return response.json();
-            })            
+            })
             .catch(err => console.log('error', err));
     }
 

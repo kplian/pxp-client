@@ -205,7 +205,14 @@ class EncryptionV1 {
 }
 
 export default class PXPClient {
-    constructor(host, baseUrl = 'rest/', mode = 'same-origin', port = '80', protocol = 'http', backendRestVersion = 2) {
+    constructor() {
+        if(!PXPClient.instance) {
+            PXPClient.instance = this;
+        }
+        return PXPClient.instance;
+    }
+
+    init(host, baseUrl = 'rest/', mode = 'same-origin', port = '80', protocol = 'http', backendRestVersion = 2) {
         this.host = host;
         this.baseUrl = baseUrl;
         this.port = port;
@@ -324,4 +331,8 @@ export default class PXPClient {
             .join('&');
     }
 }
+
+const connection = new PXPClient();
+Object.freeze(connection);
+export default connection;
  

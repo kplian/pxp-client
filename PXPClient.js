@@ -320,9 +320,9 @@ class PXPClient {
 
         return fetch(request)
             .then(response => {
-                if (response.status === 401){
-                    this.authenticated = false;
+                if (response.status === 401) {
                     this.sessionDied = true;
+                    this.authenticated = false;                    
                 }
                 return response.json();
             })

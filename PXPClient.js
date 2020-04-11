@@ -204,7 +204,7 @@ class EncryptionV1 {
 
 }
 
-export default class PXPClient {
+class PXPClient {
     constructor() {
         if(!PXPClient.instance) {
             PXPClient.instance = this;

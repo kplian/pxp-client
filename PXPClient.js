@@ -333,6 +333,5 @@ class PXPClient {
 }
 
 const connection = new PXPClient();
-Object.freeze(connection);
 export default connection;
  

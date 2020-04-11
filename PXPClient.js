@@ -215,10 +215,12 @@ class PXPClient {
     init(host, baseUrl = 'rest/', mode = 'same-origin', port = '80', protocol = 'http', backendRestVersion = 2) {
         this.host = host;
         this.baseUrl = baseUrl;
+        this.session = baseUrl;
         this.port = port;
         this.protocol = protocol;
         this.mode = mode;
         this.backendRestVersion = backendRestVersion;
+        this.sessionDied = false;
         this._authenticated = sessionStorage.aut ?  JSON.parse(sessionStorage.aut) : false;
         this.authenticatedListener = (val)  => {};
     }
@@ -246,7 +248,7 @@ class PXPClient {
 
         this.user = user;
         const md5Pass = md5(pass).toString();
-
+        this.sessionDied = false;
         let encrypted;
         if(this.backendRestVersion === 1) {
             const enc = new EncryptionV1();
@@ -278,6 +280,7 @@ class PXPClient {
             .catch(err => console.log('error', err));
     }
     logout() {
+        this.sessionDied = false;
         const request = this.request({
             url: 'seguridad/Auten/cerrarSesion'
 
@@ -319,6 +322,7 @@ class PXPClient {
             .then(response => {
                 if (response.status === 401){
                     this.authenticated = false;
+                    this.sessionDied = true;
                 }
                 return response.json();
             })

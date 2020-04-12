@@ -1,7 +1,7 @@
 /**
  * Pxp Rest client v2
  * Connect with pxp framework php 7 version
- * @author : Jaime Rivera
+ * @author : Jaime Rivera, Favio Figueroa
  * @example
  * // create client:
  * const x = new PXPClient('3.101.135.201', 'kerp/pxp/lib/rest', 'cors');
@@ -24,6 +24,17 @@
  *   .then(data => console.log(data))
  *   .catch(err => console.log('error', err));
  *
+ * @webSocket
+ * the websocket is initialized when the login has been correct
+ * for listening some event you need to import webSocketListener
+ * @example
+ * webSocketListener({event:'testWebsocket',idComponent:uuidv4(), handle: (e)=> {handleOnMessage(e)}});
+ * for sending message for some event you need to import sendMessageWs
+ * @example
+ * sendMessageWs({
+ *                 event: 'testWebsocket',
+ *                 msg: 'test msg'
+ *              });
  */
 
 import md5 from 'crypto-js/md5';
@@ -212,7 +223,7 @@ class PXPClient {
         return PXPClient.instance;
     }
 
-    init(host, baseUrl = 'rest/', mode = 'same-origin', port = '80', protocol = 'http', backendRestVersion = 2) {
+    init(host, baseUrl = 'rest/', mode = 'same-origin', port = '80', protocol = 'http', backendRestVersion = 2, portWs = '8010') {
         this.host = host;
         this.baseUrl = baseUrl;
         this.session = baseUrl;
@@ -223,6 +234,10 @@ class PXPClient {
         this.sessionDied = false;
         this._authenticated = sessionStorage.aut ?  JSON.parse(sessionStorage.aut) : false;
         this.authenticatedListener = (val)  => {};
+        this.portWs = portWs;
+        this.eventsWs = {};
+
+
     }
 
     get authenticated() {
@@ -272,8 +287,11 @@ class PXPClient {
             .then(data => {
                 const error = data.ROOT ? data.ROOT.error : false;
                 if (!error) {
+                    this.initWebsocket(data);
                     this.authenticated = data;
-                    //sessionStorage.aut = this.authenticated; 
+                    //sessionStorage.aut = this.authenticated;
+                    //init websocket
+
                 }
                 return data;
             })
@@ -314,7 +332,6 @@ class PXPClient {
             }
         );
     }
-
     doRequest(obj) {
         const request = this.request(obj);
 
@@ -334,8 +351,86 @@ class PXPClient {
             .map(key => encodeURIComponent(key) + '=' + encodeURIComponent(data[key]))
             .join('&');
     }
+
+    initWebsocket(data) {
+        this.webSocket = new WebSocket(`ws://${this.host}:${this.portWs}?sessionIDPXP=${data.phpsession}`);
+        const json = JSON.stringify({
+            data: {"id_usuario": data.id_usuario},
+            tipo: "registrarUsuarioSocket"
+
+        });
+        this.webSocket.onopen = () => {
+            this.webSocket.send(json);
+        };
+        this.eventsWs = {};
+
+        this.webSocket.onmessage = ev => {
+            const response = JSON.parse(ev.data);
+            //config for send the msg
+            const data = response.data;
+
+            if (data.tipo == 'respuesta de envio'){
+                //todo
+            }else{ //o si es un mensaje que tiene que ejecutar en evento
+                if(data.id_contenedor !== undefined){
+
+                    console.log(data.id_usuario +'_'+data.id_contenedor+'_'+data.evento);
+                    console.log(this.eventsWs);
+                    this.eventsWs[data.id_usuario +'_'+data.id_contenedor+'_'+data.evento].handle(response);
+
+                }else{
+                    //todo events into of class for message or alerts in all app
+                }
+            }
+
+        }
+
+    }
+
+    webSocketListener(obj) {
+        this.eventsWs[this._authenticated.id_usuario +'_'+obj.idComponent+'_'+obj.event] = {
+          handle: obj.handle
+        };
+        const json = JSON.stringify({
+            data: {
+                id_usuario: this._authenticated.id_usuario,
+                nombre_usuario: this._authenticated.nombre_usuario,
+                evento: obj.event,
+                id_contenedor: obj.idComponent,
+                metodo: 'obj.handle' // change that because now we are using handle directly for executing
+            },
+            tipo: 'escucharEvento'
+
+        });
+        this.webSocket.onopen = () => {
+            this.webSocket.send(json);
+        };
+
+    }
+
+    sendMessageWs(obj) {
+        const json = JSON.stringify({
+            tipo: 'enviarMensaje',
+            data: {
+                evento: obj.event,
+                mensaje: obj.msg
+            }
+        });
+        this.webSocket.send(json);
+    }
+
+
+
+
+
+
+
+
 }
 
 const connection = new PXPClient();
 export default connection;
- 
+export const webSocketListener = (obj) => {connection.webSocketListener(obj)};
+export const sendMessageWs = (obj) => {connection.sendMessageWs(obj)};
+
+

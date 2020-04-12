@@ -382,9 +382,7 @@ class PXPClient {
                     //todo events into of class for message or alerts in all app
                 }
             }
-
         }
-
     }
 
     webSocketListener(obj) {

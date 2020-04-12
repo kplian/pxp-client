@@ -417,13 +417,6 @@ class PXPClient {
         this.webSocket.send(json);
     }
 
-
-
-
-
-
-
-
 }
 
 const connection = new PXPClient();

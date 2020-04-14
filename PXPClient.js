@@ -341,8 +341,9 @@ class PXPClient {
                     this.sessionDied = true;
                     this.authenticated = false;                    
                 }
-                const data = response.json();
-                
+                return response.json()
+            })
+            .then(data => {
                 if (data.ROOT){
                     return {
                         error: data.ROOT.error,

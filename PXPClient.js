@@ -344,10 +344,19 @@ class PXPClient {
                 const data = response.json();
                 
                 if (data.ROOT){
-                    if (data.ROOT.error){
-                        return data.ROOT
+                    return {
+                        error: data.ROOT.error,
+                        detail: data.ROOT.detalle ? {
+                            message: data.ROOT.detalle.mensaje,
+                            tecMessage: data.ROOT.detalle.mensaje_tec || undefined,
+                            origin: data.ROOT.detalle.origen || undefined,
+                            procedure: data.ROOT.detalle.procedimiento || undefined,
+                            transaction: data.ROOT.detalle.transaccion || undefined,
+                            layer: data.ROOT.detalle.capa || undefined,
+                            query: data.ROOT.detalle.consulta || undefined
+                        } : {},
+                        data: data.ROOT.datos
                     }
-                    return data.ROOT.data
                 }
                 return data
             })

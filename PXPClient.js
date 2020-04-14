@@ -324,7 +324,15 @@ class PXPClient {
                     this.sessionDied = true;
                     this.authenticated = false;                    
                 }
-                return response.json();
+                const data = response.json();
+                
+                if (data.ROOT){
+                    if (data.ROOT.error){
+                        return data.ROOT
+                    }
+                    return data.ROOT.data
+                }
+                return data
             })
             .catch(err => console.log('error', err));
     }

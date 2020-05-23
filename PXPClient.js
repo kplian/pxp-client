@@ -260,7 +260,6 @@ class PXPClient {
     }
 
     login(user, pass) {
-
         this.user = user;
         const md5Pass = md5(pass).toString();
         this.sessionDied = false;

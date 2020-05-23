@@ -314,7 +314,6 @@ class PXPClient {
         const headers = obj.headers || {};
         let params = '';
         if (obj.params && obj.type !== 'upload') {
-            console.log('entra a encode')
             params = this.encodeFormData(obj.params);
         }
         if(obj.type === 'upload') {

@@ -314,18 +314,24 @@ class PXPClient {
     request(obj) {
         const headers = obj.headers || {};
         let params = '';
-        if (obj.params) {
+        if (obj.params && obj.type !== 'upload') {
+            console.log('entra a encode')
             params = this.encodeFormData(obj.params);
+        }
+        if(obj.type === 'upload') {
+            params = obj.params;
         }
         return new Request(
             `${this.protocol}://${this.host}:${this.port}/${this.baseUrl}/${obj.url}`,
             {
                 method: obj.method || 'POST',
                 mode: this.mode,
-                headers: {
-                    ...headers,
-                    'content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
-                },
+                ...(obj.type !== 'upload' && {
+                    headers: {
+                        ...headers,
+                        'content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+                    },
+                }),
                 cache: 'no-cache',
                 credentials: 'include',
                 body: params

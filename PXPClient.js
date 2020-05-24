@@ -287,7 +287,7 @@ class PXPClient {
                 const error = data.ROOT ? data.ROOT.error : false;
                 if (!error) {
                     this.initWebsocket(data);
-                    this.authenticated = data;
+                    this.authenticated = { ...data, user };
                     //sessionStorage.aut = this.authenticated;
                     //init websocket
 

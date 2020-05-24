@@ -100,10 +100,10 @@ class Encryption {
         if (iterations <= 0) {
             iterations = 999;
         }
-        var encryptMethodLength = (this.encryptMethodLength/4);// example: AES number is 256 / 4 = 64
-        var hashKey = CryptoJS.PBKDF2(key, salt, {'hasher': CryptoJS.algo.SHA512, 'keySize': (encryptMethodLength/8), 'iterations': iterations});
+        var encryptMethodLength = (this.encryptMethodLength / 4);// example: AES number is 256 / 4 = 64
+        var hashKey = CryptoJS.PBKDF2(key, salt, { 'hasher': CryptoJS.algo.SHA512, 'keySize': (encryptMethodLength / 8), 'iterations': iterations });
 
-        var decrypted = AES.decrypt(encrypted, hashKey, {'mode': CryptoJS.mode.CBC, 'iv': iv});
+        var decrypted = AES.decrypt(encrypted, hashKey, { 'mode': CryptoJS.mode.CBC, 'iv': iv });
 
         return decrypted.toString(Utf8);
     }// decrypt
@@ -123,10 +123,10 @@ class Encryption {
 
         var salt = CryptoJS.lib.WordArray.random(256);
         var iterations = 999;
-        var encryptMethodLength = (this.encryptMethodLength/4);// example: AES number is 256 / 4 = 64
-        var hashKey = CryptoJS.PBKDF2(key, salt, {'hasher': CryptoJS.algo.SHA512, 'keySize': (encryptMethodLength/8), 'iterations': iterations});
+        var encryptMethodLength = (this.encryptMethodLength / 4);// example: AES number is 256 / 4 = 64
+        var hashKey = CryptoJS.PBKDF2(key, salt, { 'hasher': CryptoJS.algo.SHA512, 'keySize': (encryptMethodLength / 8), 'iterations': iterations });
 
-        var encrypted = AES.encrypt(string, hashKey, {'mode': CryptoJS.mode.CBC, 'iv': iv});
+        var encrypted = AES.encrypt(string, hashKey, { 'mode': CryptoJS.mode.CBC, 'iv': iv });
         var encryptedString = Base64.stringify(encrypted.ciphertext);
 
         var output = {
@@ -140,8 +140,8 @@ class Encryption {
     }// encrypt
 }
 
-import {Base64 as Base64V1} from './js/base64.js';
-import {mcrypt} from './js/mcrypt.js';
+import { Base64 as Base64V1 } from './js/base64.js';
+import { mcrypt } from './js/mcrypt.js';
 
 class EncryptionV1 {
 
@@ -217,7 +217,7 @@ class EncryptionV1 {
 
 class PXPClient {
     constructor() {
-        if(!PXPClient.instance) {
+        if (!PXPClient.instance) {
             PXPClient.instance = this;
         }
         return PXPClient.instance;
@@ -232,8 +232,8 @@ class PXPClient {
         this.mode = mode;
         this.backendRestVersion = backendRestVersion;
         this.sessionDied = false;
-        this._authenticated = sessionStorage.aut ?  JSON.parse(sessionStorage.aut) : false;
-        this.authenticatedListener = (val)  => {};
+        this._authenticated = sessionStorage.aut ? JSON.parse(sessionStorage.aut) : false;
+        this.authenticatedListener = (val) => { };
         this.portWs = portWs;
         this.eventsWs = {};
 
@@ -264,7 +264,7 @@ class PXPClient {
         const md5Pass = md5(pass).toString();
         this.sessionDied = false;
         let encrypted;
-        if(this.backendRestVersion === 1) {
+        if (this.backendRestVersion === 1) {
             const enc = new EncryptionV1();
             encrypted = enc.encrypt(this.user, md5Pass);
         } else {
@@ -292,7 +292,7 @@ class PXPClient {
                     //init websocket
 
                 }
-                return data;
+                return { ...data, user };
             })
             .catch(err => console.log('error', err));
     }
@@ -316,7 +316,7 @@ class PXPClient {
         if (obj.params && obj.type !== 'upload') {
             params = this.encodeFormData(obj.params);
         }
-        if(obj.type === 'upload') {
+        if (obj.type === 'upload') {
             params = obj.params;
         }
         return new Request(
@@ -343,12 +343,12 @@ class PXPClient {
             .then(response => {
                 if (response.status === 401) {
                     this.sessionDied = true;
-                    this.authenticated = false;                    
+                    this.authenticated = false;
                 }
                 return response.json()
             })
             .then(data => {
-                if (data.ROOT){
+                if (data.ROOT) {
                     return {
                         error: data.ROOT.error,
                         detail: data.ROOT.detalle ? {
@@ -377,7 +377,7 @@ class PXPClient {
     initWebsocket(data) {
         this.webSocket = new WebSocket(`ws://${this.host}:${this.portWs}?sessionIDPXP=${data.phpsession}`);
         const json = JSON.stringify({
-            data: {"id_usuario": data.id_usuario},
+            data: { "id_usuario": data.id_usuario },
             tipo: "registrarUsuarioSocket"
 
         });
@@ -391,16 +391,16 @@ class PXPClient {
             //config for send the msg
             const data = response.data;
 
-            if (data.tipo == 'respuesta de envio'){
+            if (data.tipo == 'respuesta de envio') {
                 //todo
-            }else{ //o si es un mensaje que tiene que ejecutar en evento
-                if(data.id_contenedor !== undefined){
+            } else { //o si es un mensaje que tiene que ejecutar en evento
+                if (data.id_contenedor !== undefined) {
 
-                    console.log(data.id_usuario +'_'+data.id_contenedor+'_'+data.evento);
+                    console.log(data.id_usuario + '_' + data.id_contenedor + '_' + data.evento);
                     console.log(this.eventsWs);
-                    this.eventsWs[data.id_usuario +'_'+data.id_contenedor+'_'+data.evento].handle(response);
+                    this.eventsWs[data.id_usuario + '_' + data.id_contenedor + '_' + data.evento].handle(response);
 
-                }else{
+                } else {
                     //todo events into of class for message or alerts in all app
                 }
             }
@@ -408,8 +408,8 @@ class PXPClient {
     }
 
     webSocketListener(obj) {
-        this.eventsWs[this._authenticated.id_usuario +'_'+obj.idComponent+'_'+obj.event] = {
-          handle: obj.handle
+        this.eventsWs[this._authenticated.id_usuario + '_' + obj.idComponent + '_' + obj.event] = {
+            handle: obj.handle
         };
         const json = JSON.stringify({
             data: {
@@ -443,7 +443,7 @@ class PXPClient {
 
 const connection = new PXPClient();
 export default connection;
-export const webSocketListener = (obj) => {connection.webSocketListener(obj)};
-export const sendMessageWs = (obj) => {connection.sendMessageWs(obj)};
+export const webSocketListener = (obj) => { connection.webSocketListener(obj) };
+export const sendMessageWs = (obj) => { connection.sendMessageWs(obj) };
 
 

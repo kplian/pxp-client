@@ -259,7 +259,7 @@ class PXPClient {
         this.authenticatedListener(this._authenticated);
     }
 
-    login(user, pass) {
+    login(user, pass, language = '') {
         this.user = user;
         const md5Pass = md5(pass).toString();
         this.sessionDied = false;
@@ -279,7 +279,8 @@ class PXPClient {
                 'Pxp-user': user,
                 'auth-version': this.backendRestVersion,
                 'Php-Auth-User': encrypted
-            }
+            },
+            params: { language },
         });
         return fetch(request)
             .then(response => response.json())

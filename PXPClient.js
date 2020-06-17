@@ -297,6 +297,28 @@ class PXPClient {
             })
             .catch(err => console.log('error', err));
     }
+    oauthLogin(user, token, type, language = '') {
+        const request = this.request({
+            url: 'seguridad/Auten/oauthLogin',
+            params: {
+                code: token,
+                usuario: user,
+                type,
+                language
+            },
+        });
+        return fetch(request)
+            .then(response => response.json())
+            .then(data => {
+                const error = data.ROOT ? data.ROOT.error : false;
+                if (!error) {
+                    this.initWebsocket(data);
+                    this.authenticated = { ...data, user };
+                }
+                return { ...data, user };
+            })
+            .catch(err => console.log('error', err));
+    }
     logout() {
         this.sessionDied = false;
         const request = this.request({

@@ -223,7 +223,7 @@ class PXPClient {
         return PXPClient.instance;
     }
 
-    init(host, baseUrl = 'rest/', mode = 'same-origin', port = '80', protocol = 'http', backendRestVersion = 2, portWs = '8010') {
+    init(host, baseUrl = 'rest/', mode = 'same-origin', port = '80', protocol = 'http', backendRestVersion = 2, initWebSocket = 'NO', portWs = '8010') {
         this.host = host;
         this.baseUrl = baseUrl;
         this.session = baseUrl;
@@ -234,10 +234,9 @@ class PXPClient {
         this.sessionDied = false;
         this._authenticated = sessionStorage.aut ? JSON.parse(sessionStorage.aut) : false;
         this.authenticatedListener = (val) => { };
+        this.initWebSocket = initWebSocket; // this is a flag YES OR NO for init the websocket
         this.portWs = portWs;
         this.eventsWs = {};
-
-
     }
 
     get authenticated() {
@@ -246,6 +245,7 @@ class PXPClient {
 
     set authenticated(val) {
         this._authenticated = val;
+        console.log('_authenticated',val)
         if (!val) {
             delete sessionStorage.aut;
         } else {
@@ -256,7 +256,17 @@ class PXPClient {
 
     onAuthStateChanged(callBack) {
         this.authenticatedListener = callBack;
-        this.authenticatedListener(this._authenticated);
+        if(this.initWebSocket === 'YES') {
+            this.initClientWebSocket(this._authenticated)
+              .then( success => {
+                  if(success) {
+                      this.authenticatedListener(this._authenticated);
+                  }
+              })
+              .catch( error => alert(error) )
+        }else{
+            this.authenticatedListener(this._authenticated);
+        }
     }
 
     login(user, pass, language = '') {
@@ -287,10 +297,19 @@ class PXPClient {
             .then(data => {
                 const error = data.ROOT ? data.ROOT.error : false;
                 if (!error) {
-                    this.initWebsocket(data);
-                    this.authenticated = { ...data, user };
+                    //this.initWebsocket(data);
+                    if(this.initWebSocket === 'YES') {
+                        this.initClientWebSocket(data)
+                          .then( success => {
+                              if(success) {
+                                  this.authenticated = { ...data, user };
+                              }
+                          })
+                          .catch( error => alert(error) )
+                    } else {
+                        this.authenticated = { ...data, user };
+                    }
                     //sessionStorage.aut = this.authenticated;
-                    //init websocket
 
                 }
                 return { ...data, user };
@@ -307,6 +326,7 @@ class PXPClient {
             .then(response => response.json())
             .then(data => {
                 this.authenticated = false;
+                this.webSocket && this.webSocket.close();
                 return data;
             })
             .catch(err => console.log('error', err));
@@ -375,40 +395,41 @@ class PXPClient {
             .join('&');
     }
 
-    initWebsocket(data) {
-        this.webSocket = new WebSocket(`ws://${this.host}:${this.portWs}?sessionIDPXP=${data.phpsession}`);
-        const json = JSON.stringify({
-            data: { "id_usuario": data.id_usuario },
-            tipo: "registrarUsuarioSocket"
 
-        });
-        this.webSocket.onopen = () => {
-            this.webSocket.send(json);
-        };
-        this.eventsWs = {};
+    initClientWebSocket(data) {
+        return new Promise((resolve, reject) => {
+            const json = JSON.stringify({
+                data: { "id_usuario": data.id_usuario },
+                tipo: "registrarUsuarioSocket"
+            });
+            this.webSocket = new WebSocket(`ws://${this.host}:${this.portWs}?sessionIDPXP=${data.phpsession}`);
+            this.webSocket.onopen = () => {
+                this.webSocket.send(json);
+                console.log('webSocket has been initialized')
+                resolve(true);
+            };
+            this.eventsWs = {};
+            this.webSocket.onmessage = ev => {
+                const response = JSON.parse(ev.data);
+                //config for send the msg
+                const data = response.data;
 
-        this.webSocket.onmessage = ev => {
-            const response = JSON.parse(ev.data);
-            //config for send the msg
-            const data = response.data;
-
-            if (data.tipo == 'respuesta de envio') {
-                //todo
-            } else { //o si es un mensaje que tiene que ejecutar en evento
-                if (data.id_contenedor !== undefined) {
-
-                    console.log(data.id_usuario + '_' + data.id_contenedor + '_' + data.evento);
-                    console.log(this.eventsWs);
-                    this.eventsWs[data.id_usuario + '_' + data.id_contenedor + '_' + data.evento].handle(response);
-
-                } else {
-                    //todo events into of class for message or alerts in all app
+                if (data.tipo == 'respuesta de envio') {
+                    // resp for user that has sent the message
+                } else { // msg has to execute an event
+                    if (data.id_contenedor !== undefined) {
+                        this.eventsWs[data.id_usuario + '_' + data.id_contenedor + '_' + data.evento].handle(response);
+                    } else {
+                        //todo events into of class for message or alerts in all app
+                    }
                 }
             }
-        }
+            this.webSocket.onerror = error => reject(error);
+        })
     }
 
     webSocketListener(obj) {
+        //console.log(this.webSocket.readyState)
         this.eventsWs[this._authenticated.id_usuario + '_' + obj.idComponent + '_' + obj.event] = {
             handle: obj.handle
         };
@@ -423,19 +444,38 @@ class PXPClient {
             tipo: 'escucharEvento'
 
         });
-        this.webSocket.onopen = () => {
-            this.webSocket.send(json);
-        };
+        this.webSocket.send(json);
+
+    }
+
+    removeWebSocketListener({idComponent, event}) {
+        this.eventsWs[this._authenticated.id_usuario + '_' + idComponent + '_' + event] = undefined;
+        console.log(this.eventsWs)
+        const json = JSON.stringify({
+            data: {
+                id_contenedor: idComponent,
+                evento: event,
+            },
+            tipo: 'eleminarEvento'
+
+        });
+        this.webSocket.send(json);
 
     }
 
     sendMessageWs(obj) {
+        console.log(obj)
         const json = JSON.stringify({
             tipo: 'enviarMensaje',
             data: {
                 evento: obj.event,
                 mensaje: obj.msg
-            }
+            },
+            from: {
+                user: this._authenticated.nombre_usuario,
+                idUser: this._authenticated.id_usuario
+            },
+            idChat: obj.idChat || null
         });
         this.webSocket.send(json);
     }
@@ -445,6 +485,7 @@ class PXPClient {
 const connection = new PXPClient();
 export default connection;
 export const webSocketListener = (obj) => { connection.webSocketListener(obj) };
+export const removeWebSocketListener = ({idComponent, event}) => { connection.removeWebSocketListener({idComponent, event}) };
 export const sendMessageWs = (obj) => { connection.sendMessageWs(obj) };
 
 

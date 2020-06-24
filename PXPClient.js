@@ -245,7 +245,7 @@ class PXPClient {
 
     set authenticated(val) {
         this._authenticated = val;
-        console.log('_authenticated',val)
+        console.log('_authenticated', val)
         if (!val) {
             delete sessionStorage.aut;
         } else {
@@ -256,15 +256,15 @@ class PXPClient {
 
     onAuthStateChanged(callBack) {
         this.authenticatedListener = callBack;
-        if(this.initWebSocket === 'YES') {
+        if (this.initWebSocket === 'YES') {
             this.initClientWebSocket(this._authenticated)
-              .then( success => {
-                  if(success) {
-                      this.authenticatedListener(this._authenticated);
-                  }
-              })
-              .catch( error => alert(error) )
-        }else{
+                .then(success => {
+                    if (success) {
+                        this.authenticatedListener(this._authenticated);
+                    }
+                })
+                .catch(error => alert(error))
+        } else {
             this.authenticatedListener(this._authenticated);
         }
     }
@@ -298,14 +298,14 @@ class PXPClient {
                 const error = data.ROOT ? data.ROOT.error : false;
                 if (!error) {
                     //this.initWebsocket(data);
-                    if(this.initWebSocket === 'YES') {
+                    if (this.initWebSocket === 'YES') {
                         this.initClientWebSocket(data)
-                          .then( success => {
-                              if(success) {
-                                  this.authenticated = { ...data, user };
-                              }
-                          })
-                          .catch( error => alert(error) )
+                            .then(success => {
+                                if (success) {
+                                    this.authenticated = { ...data, user };
+                                }
+                            })
+                            .catch(error => alert(error))
                     } else {
                         this.authenticated = { ...data, user };
                     }
@@ -335,6 +335,26 @@ class PXPClient {
                     this.authenticated = { ...data, user };
                 }
                 return { ...data, user };
+            })
+            .catch(err => console.log('error', err));
+    }
+
+    createTokenUser({ name, surname, email, token, url_photo, login_type }) {
+        const request = this.request({
+            url: 'seguridad/Auten/createTokenUser',
+            params: {
+                name,
+                surname,
+                email,
+                token,
+                url_photo,
+                login_type
+            },
+        });
+        return fetch(request)
+            .then(response => response.json())
+            .then(data => {
+                return data;
             })
             .catch(err => console.log('error', err));
     }
@@ -470,7 +490,7 @@ class PXPClient {
 
     }
 
-    removeWebSocketListener({idComponent, event}) {
+    removeWebSocketListener({ idComponent, event }) {
         this.eventsWs[this._authenticated.id_usuario + '_' + idComponent + '_' + event] = undefined;
         console.log(this.eventsWs)
         const json = JSON.stringify({
@@ -507,7 +527,7 @@ class PXPClient {
 const connection = new PXPClient();
 export default connection;
 export const webSocketListener = (obj) => { connection.webSocketListener(obj) };
-export const removeWebSocketListener = ({idComponent, event}) => { connection.removeWebSocketListener({idComponent, event}) };
+export const removeWebSocketListener = ({ idComponent, event }) => { connection.removeWebSocketListener({ idComponent, event }) };
 export const sendMessageWs = (obj) => { connection.sendMessageWs(obj) };
 
 

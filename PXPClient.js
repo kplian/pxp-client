@@ -317,13 +317,14 @@ class PXPClient {
             .catch(err => console.log('error', err));
     }
 
-    oauthLogin(user, token, type, language = '') {
+    oauthLogin(user, token, type, device, language = '') {
         const request = this.request({
             url: 'seguridad/Auten/oauthLogin',
             params: {
                 code: token,
                 usuario: user,
                 type,
+                device,
                 language
             },
         });

@@ -256,14 +256,20 @@ class PXPClient {
 
     onAuthStateChanged(callBack) {
         this.authenticatedListener = callBack;
+        console.log('this.initWebSocket',this.initWebSocket)
         if(this.initWebSocket === 'YES') {
-            this.initClientWebSocket(this._authenticated)
-              .then( success => {
-                  if(success) {
-                      this.authenticatedListener(this._authenticated);
-                  }
-              })
-              .catch( error => alert(error) )
+            if(this._authenticated === false) {
+                this.authenticatedListener(this._authenticated);
+            } else {
+                this.initClientWebSocket(this._authenticated)
+                  .then( success => {
+                      if(success) {
+                          this.authenticatedListener(this._authenticated);
+                      }
+                  })
+                  .catch( error => alert(error) )
+            }
+
         }else{
             this.authenticatedListener(this._authenticated);
         }
@@ -298,6 +304,7 @@ class PXPClient {
                 const error = data.ROOT ? data.ROOT.error : false;
                 if (!error) {
                     //this.initWebsocket(data);
+                    console.log('this.initWebSocket',this.initWebSocket)
                     if(this.initWebSocket === 'YES') {
                         this.initClientWebSocket(data)
                           .then( success => {
@@ -419,12 +426,16 @@ class PXPClient {
 
 
     initClientWebSocket(data) {
+        console.log('initClientWebSocket........',data)
+
         return new Promise((resolve, reject) => {
             const json = JSON.stringify({
                 data: { "id_usuario": data.id_usuario },
                 tipo: "registrarUsuarioSocket"
             });
-            this.webSocket = new WebSocket(`ws://${this.host}:${this.portWs}?sessionIDPXP=${data.phpsession}`);
+            const ws = this.protocol === 'https' ? 'wss' : 'ws';
+            this.webSocket = new WebSocket(`${ws}://${this.host}:${this.portWs}?sessionIDPXP=${data.phpsession}`);
+            console.log(`${ws}://${this.host}:${this.portWs}?sessionIDPXP=${data.phpsession}`)
             this.webSocket.onopen = () => {
                 this.webSocket.send(json);
                 console.log('webSocket has been initialized')
@@ -446,7 +457,11 @@ class PXPClient {
                     }
                 }
             }
-            this.webSocket.onerror = error => reject(error);
+            this.webSocket.onclose = e => {
+                console.log('webSocket has closed');
+                //location.reload();
+            }
+            this.webSocket.onerror = error => resolve(false);
         })
     }
 

@@ -256,33 +256,20 @@ class PXPClient {
 
     onAuthStateChanged(callBack) {
         this.authenticatedListener = callBack;
-<<<<<<< HEAD
-        console.log('this.initWebSocket',this.initWebSocket)
-        if(this.initWebSocket === 'YES') {
+        if (this.initWebSocket === 'YES') {
             if(this._authenticated === false) {
                 this.authenticatedListener(this._authenticated);
-            } else {
+            }else {
                 this.initClientWebSocket(this._authenticated)
-                  .then( success => {
-                      if(success) {
+                  .then(success => {
+                      if (success) {
                           this.authenticatedListener(this._authenticated);
                       }
                   })
-                  .catch( error => alert(error) )
+                  .catch(error => alert(error))
             }
 
-        }else{
-=======
-        if (this.initWebSocket === 'YES') {
-            this.initClientWebSocket(this._authenticated)
-                .then(success => {
-                    if (success) {
-                        this.authenticatedListener(this._authenticated);
-                    }
-                })
-                .catch(error => alert(error))
         } else {
->>>>>>> d3b263d35953b1fc0dc006eeccce6ca4e02181d3
             this.authenticatedListener(this._authenticated);
         }
     }
@@ -316,12 +303,8 @@ class PXPClient {
                 const error = data.ROOT ? data.ROOT.error : false;
                 if (!error) {
                     //this.initWebsocket(data);
-<<<<<<< HEAD
                     console.log('this.initWebSocket',this.initWebSocket)
                     if(this.initWebSocket === 'YES') {
-=======
-                    if (this.initWebSocket === 'YES') {
->>>>>>> d3b263d35953b1fc0dc006eeccce6ca4e02181d3
                         this.initClientWebSocket(data)
                             .then(success => {
                                 if (success) {

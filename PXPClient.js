@@ -464,7 +464,8 @@ class PXPClient {
                 tipo: "registrarUsuarioSocket"
             });
             const ws = this.protocol === 'https' ? 'wss' : 'ws';
-            this.webSocket = new WebSocket(`${ws}://${this.host}:${this.portWs}?sessionIDPXP=${data.phpsession}`);
+            const folderWss = ws === 'wss' ? 'wss' : '';
+            this.webSocket = new WebSocket(`${ws}://${this.host}:${this.portWs}/${folderWss}?sessionIDPXP=${data.phpsession}`);
             console.log(`${ws}://${this.host}:${this.portWs}?sessionIDPXP=${data.phpsession}`)
             this.webSocket.onopen = () => {
                 this.webSocket.send(json);

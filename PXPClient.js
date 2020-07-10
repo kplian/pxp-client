@@ -257,16 +257,16 @@ class PXPClient {
     onAuthStateChanged(callBack) {
         this.authenticatedListener = callBack;
         if (this.initWebSocket === 'YES') {
-            if(this._authenticated === false) {
+            if (this._authenticated === false) {
                 this.authenticatedListener(this._authenticated);
-            }else {
+            } else {
                 this.initClientWebSocket(this._authenticated)
-                  .then(success => {
-                      if (success) {
-                          this.authenticatedListener(this._authenticated);
-                      }
-                  })
-                  .catch(error => alert(error))
+                    .then(success => {
+                        if (success) {
+                            this.authenticatedListener(this._authenticated);
+                        }
+                    })
+                    .catch(error => alert(error))
             }
 
         } else {
@@ -303,8 +303,8 @@ class PXPClient {
                 const error = data.ROOT ? data.ROOT.error : false;
                 if (!error) {
                     //this.initWebsocket(data);
-                    console.log('this.initWebSocket',this.initWebSocket)
-                    if(this.initWebSocket === 'YES') {
+                    console.log('this.initWebSocket', this.initWebSocket)
+                    if (this.initWebSocket === 'YES') {
                         this.initClientWebSocket(data)
                             .then(success => {
                                 if (success) {
@@ -323,7 +323,7 @@ class PXPClient {
             .catch(err => console.log('error', err));
     }
 
-    oauthLogin(userId, name, surname, email, token, urlPhoto, type, device, language = '') {
+    oauthLogin(userId, token, name, surname, email, urlPhoto, type, device, language = '') {
         const request = this.request({
             url: 'seguridad/Auten/oauthLogin',
             params: {
@@ -460,7 +460,7 @@ class PXPClient {
 
 
     initClientWebSocket(data) {
-        console.log('initClientWebSocket........',data)
+        console.log('initClientWebSocket........', data)
 
         return new Promise((resolve, reject) => {
             const json = JSON.stringify({

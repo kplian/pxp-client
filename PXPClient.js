@@ -324,6 +324,8 @@ class PXPClient {
     }
 
     oauthLogin(userId, token, name, surname, email, urlPhoto, type, device, language = '') {
+        this.user = email;
+        this.sessionDied = false;
         const request = this.request({
             url: 'seguridad/Auten/oauthLogin',
             params: {
@@ -347,15 +349,15 @@ class PXPClient {
                         this.initClientWebSocket(data)
                             .then(success => {
                                 if (success) {
-                                    this.authenticated = { ...data, user };
+                                    this.authenticated = { ...data, ...{ user: email } };
                                 }
                             })
                             .catch(error => alert(error))
                     } else {
-                        this.authenticated = { ...data, user };
+                        this.authenticated = { ...data, ...{ user: email } };
                     }
                 }
-                return { ...data, user };
+                return { ...data, ...{ user: email } };
             })
             .catch(err => console.log('error', err));
     }

@@ -237,6 +237,8 @@ class PXPClient {
         this.initWebSocket = initWebSocket; // this is a flag YES OR NO for init the websocket
         this.portWs = portWs;
         this.eventsWs = {};
+
+        this.onCloseWebSocketListener = (val) => { };
     }
 
     get authenticated() {
@@ -252,6 +254,10 @@ class PXPClient {
             sessionStorage.aut = JSON.stringify(val);
         }
         this.authenticatedListener(val);
+    }
+
+    onCloseWebSocket(callBack) {
+        this.onCloseWebSocketListener = callBack;
     }
 
     onAuthStateChanged(callBack) {
@@ -461,6 +467,7 @@ class PXPClient {
     }
 
 
+
     initClientWebSocket(data) {
         console.log('initClientWebSocket........', data)
 
@@ -496,11 +503,13 @@ class PXPClient {
             }
             this.webSocket.onclose = e => {
                 console.log('webSocket has closed');
+                this.onCloseWebSocketListener(e);
                 //location.reload();
             }
             this.webSocket.onerror = error => resolve(false);
         })
     }
+
 
     webSocketListener(obj) {
         //console.log(this.webSocket.readyState)
@@ -561,5 +570,6 @@ export default connection;
 export const webSocketListener = (obj) => { connection.webSocketListener(obj) };
 export const removeWebSocketListener = ({ idComponent, event }) => { connection.removeWebSocketListener({ idComponent, event }) };
 export const sendMessageWs = (obj) => { connection.sendMessageWs(obj) };
+export const onCloseWebSocket = (callback) => { connection.onCloseWebSocket(callback) };
 
 

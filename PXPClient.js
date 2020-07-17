@@ -503,7 +503,9 @@ class PXPClient {
             }
             this.webSocket.onclose = e => {
                 console.log('webSocket has closed');
-                this.onCloseWebSocketListener(e);
+                if(this.authenticated !== false) {
+                    this.onCloseWebSocketListener(e);
+                }
                 //location.reload();
             }
             this.webSocket.onerror = error => resolve(false);

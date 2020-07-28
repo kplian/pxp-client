@@ -298,7 +298,7 @@ class PXPClient {
     const request = this.request({
       url: 'seguridad/Auten/verificarCredenciales',
       headers: {
-        'Pxp-user': user,
+        'Pxp-user': user.normalize("NFD").replace(/[\u0300-\u036f]/g, ""),//remove accents from user
         'auth-version': this.backendRestVersion,
         'Php-Auth-User': encrypted
       },

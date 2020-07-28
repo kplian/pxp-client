@@ -315,12 +315,12 @@ class PXPClient {
             this.initClientWebSocket(data)
               .then(success => {
                 if (success) {
-                  this.authenticated = { ...data, user };
+                  this.authenticated = { ...data, user: this.user };
                 }
               })
               .catch(error => alert(error))
           } else {
-            this.authenticated = { ...data, user };
+            this.authenticated = { ...data, user: this.user };
           }
           //sessionStorage.aut = this.authenticated;
 

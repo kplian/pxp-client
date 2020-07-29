@@ -232,7 +232,7 @@ class PXPClient {
     this.mode = mode;
     this.backendRestVersion = backendRestVersion;
     this.sessionDied = false;
-    this._authenticated = sessionStorage.aut ? JSON.parse(sessionStorage.aut) : false;
+    this._authenticated = localStorage.aut ? JSON.parse(localStorage.aut) : false;
     this.authenticatedListener = (val) => { };
     this.initWebSocket = initWebSocket; // this is a flag YES OR NO for init the websocket
     this.portWs = portWs;
@@ -249,9 +249,9 @@ class PXPClient {
     this._authenticated = val;
     console.log('_authenticated', val)
     if (!val) {
-      delete sessionStorage.aut;
+      delete localStorage.aut;
     } else {
-      sessionStorage.aut = JSON.stringify(val);
+      localStorage.aut = JSON.stringify(val);
     }
     this.authenticatedListener(val);
   }
@@ -322,7 +322,6 @@ class PXPClient {
           } else {
             this.authenticated = { ...data, user: this.user };
           }
-          //sessionStorage.aut = this.authenticated;
 
         }
         return { ...data, user };

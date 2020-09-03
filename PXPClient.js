@@ -286,14 +286,16 @@ class PXPClient {
     this.sessionDied = false;
     let encrypted;
     const deviceID = localStorage.deviceID || '';
-    if (this.backendRestVersion === 1) {
+    if (parseInt(this.backendRestVersion, 10) === 1) {
       const enc = new EncryptionV1();
       encrypted = enc.encrypt(this.user, md5Pass);
     } else {
+
       this.prefix = uuidv4();
       const enc = new Encryption();
       encrypted = enc.encrypt(this.prefix + '$$' + this.user, md5Pass);
     }
+
 
     const request = this.request({
       url: 'seguridad/Auten/verificarCredenciales',

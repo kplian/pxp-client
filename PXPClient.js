@@ -223,7 +223,7 @@ class PXPClient {
     return PXPClient.instance;
   }
 
-  init(host, baseUrl = 'rest/', mode = 'same-origin', port = '80', protocol = 'http', backendRestVersion = 2, initWebSocket = 'NO', portWs = '8010') {
+  init(host, baseUrl = 'rest/', mode = 'same-origin', port = '80', protocol = 'http', backendRestVersion = 2, initWebSocket = 'NO', portWs = '8010',  backendVersion = 'v1') {
     this.host = host;
     this.baseUrl = baseUrl;
     this.session = baseUrl;
@@ -237,6 +237,8 @@ class PXPClient {
     this.initWebSocket = initWebSocket; // this is a flag YES OR NO for init the websocket
     this.portWs = portWs;
     this.eventsWs = {};
+    this.backendVersion = backendVersion; // this is for see if is php pxp version or node pxp version
+
 
     this.onCloseWebSocketListener = (val) => { };
   }
@@ -298,13 +300,19 @@ class PXPClient {
 
 
     const request = this.request({
-      url: 'seguridad/Auten/verificarCredenciales',
-      headers: {
+      url: this.backendVersion === 'v1' ? 'seguridad/Auten/verificarCredenciales' : 'auth/login',
+      ...(this.backendVersion === 'v1' ? { headers: {
         'Pxp-user': this.user,
         'auth-version': this.backendRestVersion,
-        'Php-Auth-User': encrypted
-      },
-      params: { language, deviceID },
+        'Php-Auth-User': encrypted,
+        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+      }}: {
+        headers: {
+          'Content-Type': 'application/json',
+          //'Access-Control-Allow-Origin': '*'
+        }
+      } ),
+      ...(this.backendVersion === 'v1' ? { params: { language, deviceID } } : { params : { username: user, password: pass}}),
     });
     return fetch(request)
       .then(response => response.json())
@@ -411,25 +419,39 @@ class PXPClient {
     const headers = obj.headers || {};
     let params = '';
     if (obj.params && obj.type !== 'upload') {
-      params = this.encodeFormData(obj.params);
+      if(this.backendVersion === 'v1') {
+        params = this.encodeFormData(obj.params);
+      } else {
+        if(obj.method === 'GET') {
+          params = this.encodeFormData(obj.params);
+        }else {
+          params = JSON.stringify(obj.params);
+        }
+      }
     }
     if (obj.type === 'upload') {
       params = obj.params;
     }
+    let urlRequest = `${this.protocol}://${this.host}:${this.port}/${this.baseUrl}/${obj.url}`;
+    if(obj.method === 'GET') {
+      urlRequest = `${urlRequest}?${params}`;
+    }
     return new Request(
-      `${this.protocol}://${this.host}:${this.port}/${this.baseUrl}/${obj.url}`,
+      urlRequest,
       {
         method: obj.method || 'POST',
         mode: this.mode,
         ...(obj.type !== 'upload' && {
           headers: {
             ...headers,
-            'content-Type': 'application/x-www-form-urlencoded; charset=UTF-8'
+            ...(this.backendVersion === 'v2' && {'Content-Type': 'application/json'}),
           },
         }),
         cache: 'no-cache',
+        //...(this.backendVersion === 'v1' && { credentials: 'include' }),
         credentials: 'include',
-        body: params
+        ...(obj.method !== 'GET' && { body: params }),
+        redirect: 'follow'
       }
     );
   }

@@ -223,7 +223,7 @@ class PXPClient {
     return PXPClient.instance;
   }
 
-  init(host, baseUrl = 'rest/', mode = 'same-origin', port = '80', protocol = 'http', backendRestVersion = 2, initWebSocket = 'NO', portWs = '8010',  backendVersion = 'v1') {
+  init(host, baseUrl = 'rest/', mode = 'same-origin', port = '80', protocol = 'http', backendRestVersion = '2', initWebSocket = 'NO', portWs = '8010', backendVersion = 'v1') {
     this.host = host;
     this.baseUrl = baseUrl;
     this.session = baseUrl;
@@ -301,18 +301,20 @@ class PXPClient {
 
     const request = this.request({
       url: this.backendVersion === 'v1' ? 'seguridad/Auten/verificarCredenciales' : 'auth/login',
-      ...(this.backendVersion === 'v1' ? { headers: {
-        'Pxp-user': this.user,
-        'auth-version': this.backendRestVersion,
-        'Php-Auth-User': encrypted,
-        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-      }}: {
+      ...(this.backendVersion === 'v1' ? {
         headers: {
-          'Content-Type': 'application/json',
-          //'Access-Control-Allow-Origin': '*'
+          'Pxp-user': this.user,
+          'auth-version': this.backendRestVersion,
+          'Php-Auth-User': encrypted,
+          'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
         }
-      } ),
-      ...(this.backendVersion === 'v1' ? { params: { language, deviceID } } : { params : { username: user, password: pass}}),
+      } : {
+          headers: {
+            'Content-Type': 'application/json',
+            //'Access-Control-Allow-Origin': '*'
+          }
+        }),
+      ...(this.backendVersion === 'v1' ? { params: { language, deviceID } } : { params: { username: user, password: pass } }),
     });
     return fetch(request)
       .then(response => response.json())
@@ -325,12 +327,22 @@ class PXPClient {
             this.initClientWebSocket(data)
               .then(success => {
                 if (success) {
-                  this.authenticated = { ...data, user: this.user };
+                  this.authenticated = {
+                    ...data,
+                    user: this.user,
+                    userId: (data.id_usuario || data.userId),
+                    username: (data.nombre_usuario || data.userId)
+                  };
                 }
               })
               .catch(error => alert(error))
           } else {
-            this.authenticated = { ...data, user: this.user };
+            this.authenticated = {
+              ...data,
+              user: this.user,
+              userId: (data.id_usuario || data.userId),
+              username: (data.nombre_usuario || data.username)
+            };
           }
 
         }
@@ -419,12 +431,12 @@ class PXPClient {
     const headers = obj.headers || {};
     let params = '';
     if (obj.params && obj.type !== 'upload') {
-      if(this.backendVersion === 'v1') {
+      if (this.backendVersion === 'v1') {
         params = this.encodeFormData(obj.params);
       } else {
-        if(obj.method === 'GET') {
+        if (obj.method === 'GET') {
           params = this.encodeFormData(obj.params);
-        }else {
+        } else {
           params = JSON.stringify(obj.params);
         }
       }
@@ -433,7 +445,7 @@ class PXPClient {
       params = obj.params;
     }
     let urlRequest = `${this.protocol}://${this.host}:${this.port}/${this.baseUrl}/${obj.url}`;
-    if(obj.method === 'GET') {
+    if (obj.method === 'GET') {
       urlRequest = `${urlRequest}?${params}`;
     }
     return new Request(
@@ -444,7 +456,7 @@ class PXPClient {
         ...(obj.type !== 'upload' && {
           headers: {
             ...headers,
-            ...(this.backendVersion === 'v2' && {'Content-Type': 'application/json'}),
+            ...(this.backendVersion === 'v2' && { 'Content-Type': 'application/json' }),
           },
         }),
         cache: 'no-cache',

@@ -415,7 +415,7 @@ class PXPClient {
     this.sessionDied = false;
     const deviceID = localStorage.deviceID || '';
     const request = this.request({
-      url: 'seguridad/Auten/cerrarSesion',
+      url: this.backendVersion === 'v1' ? 'seguridad/Auten/cerrarSesion' : 'auth/logout',
       params: { deviceID },
     });
     return fetch(request)

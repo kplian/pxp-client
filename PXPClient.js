@@ -430,20 +430,23 @@ class PXPClient {
   request(obj) {
     const headers = obj.headers || {};
     let params = '';
-    if (obj.params && obj.type !== 'upload') {
-      if (this.backendVersion === 'v1') {
+
+    if (this.backendVersion === 'v1') {
+      if (obj.params && obj.type !== 'upload') {
+        params = this.encodeFormData(obj.params);
+      }
+      if (obj.type === 'upload') {
+        params = obj.params;
+      }
+    } else {
+      if (obj.method === 'GET') {
         params = this.encodeFormData(obj.params);
       } else {
-        if (obj.method === 'GET') {
-          params = this.encodeFormData(obj.params);
-        } else {
-          params = JSON.stringify(obj.params);
-        }
+        params = JSON.stringify(obj.params);
       }
     }
-    if (obj.type === 'upload') {
-      params = obj.params;
-    }
+
+
     let urlRequest = `${this.protocol}://${this.host}:${this.port}/${this.baseUrl}/${obj.url}`;
     if (obj.method === 'GET') {
       urlRequest = `${urlRequest}?${params}`;
@@ -457,6 +460,7 @@ class PXPClient {
           headers: {
             ...headers,
             ...(this.backendVersion === 'v2' && { 'Content-Type': 'application/json' }),
+            ...(this.backendVersion === 'v1' && { 'content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' }),
           },
         }),
         cache: 'no-cache',

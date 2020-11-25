@@ -473,34 +473,44 @@ class PXPClient {
   }
   doRequest(obj) {
     const request = this.request(obj);
-
-    return fetch(request)
-      .then(response => {
-        if (response.status === 401) {
-          this.sessionDied = true;
-          this.authenticated = false;
-        }
-        return response.json()
-      })
-      .then(data => {
-        if (data.ROOT) {
-          return {
-            error: data.ROOT.error,
-            detail: data.ROOT.detalle ? {
-              message: data.ROOT.detalle.mensaje,
-              tecMessage: data.ROOT.detalle.mensaje_tec || undefined,
-              origin: data.ROOT.detalle.origen || undefined,
-              procedure: data.ROOT.detalle.procedimiento || undefined,
-              transaction: data.ROOT.detalle.transaccion || undefined,
-              layer: data.ROOT.detalle.capa || undefined,
-              query: data.ROOT.detalle.consulta || undefined
-            } : {},
-            data: data.ROOT.datos
+    return new Promise((resolve, reject) => {
+      fetch(request)
+        .then(response => {
+          console.log('[FETCH]', response);
+          if (response.status === 401) {
+            this.sessionDied = true;
+            this.authenticated = false;
           }
-        }
-        return data
-      })
-      .catch(err => console.log('error', err));
+          return response.json();
+        })
+        .then(data => {
+          if (data && data.error) {
+            reject(data.error);
+          }
+
+          if (data && data.ROOT) {
+            resolve({
+              error: data.ROOT.error,
+              detail: data.ROOT.detalle ? {
+                message: data.ROOT.detalle.mensaje,
+                tecMessage: data.ROOT.detalle.mensaje_tec || undefined,
+                origin: data.ROOT.detalle.origen || undefined,
+                procedure: data.ROOT.detalle.procedimiento || undefined,
+                transaction: data.ROOT.detalle.transaccion || undefined,
+                layer: data.ROOT.detalle.capa || undefined,
+                query: data.ROOT.detalle.consulta || undefined
+              } : {},
+              data: data.ROOT.datos
+            });
+          } else {
+            resolve(data);
+          }
+        })
+        .catch(err => {
+          console.log('error', err)
+          reject(err);
+        });
+    });
   }
 
   encodeFormData(data) {

@@ -473,10 +473,12 @@ class PXPClient {
   }
   doRequest(obj) {
     const request = this.request(obj);
+    let error = false;
     return new Promise((resolve, reject) => {
       fetch(request)
         .then(response => {
           console.log('[FETCH]', response);
+          error = !response.ok;
           if (response.status === 401) {
             this.sessionDied = true;
             this.authenticated = false;
@@ -484,7 +486,11 @@ class PXPClient {
           return response.json();
         })
         .then(data => {
-          if (data && data.error) {
+          if (error && !data.error) {
+            reject(data);
+          }
+
+          if ((data && data.error)) {
             reject(data.error);
           }
 

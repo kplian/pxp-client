@@ -529,9 +529,9 @@ class PXPClient {
   }
 
   encodeFormData(data) {
-    return Object.keys(data)
+    return data ? Object.keys(data)
       .map(key => encodeURIComponent(key) + '=' + encodeURIComponent(data[key]))
-      .join('&');
+      .join('&') : '';
   }
 
 

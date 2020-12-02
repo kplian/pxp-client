@@ -281,6 +281,20 @@ class PXPClient {
       this.authenticatedListener(this._authenticated);
     }
   }
+  getError(data) {
+    const errorObject = {};
+    errorObject.error = false;
+    errorObject.message = '';
+    if (data.ROOT) {
+      errorObject.error = data.ROOT.error;
+      errorObject.message = data.ROOT.detalle.mensaje;
+    } else if (data.error) {
+      errorObject.error = true;
+      errorObject.code = data.error.code;
+      errorObject.message = data.error.message;
+    }
+    return errorObject;
+  }
 
   login(user, pass, language = '') {
     this.user = user.normalize("NFD").replace(/[\u0300-\u036f]/g, "");//remove accents from user
@@ -316,39 +330,40 @@ class PXPClient {
         }),
       ...(this.backendVersion === 'v1' ? { params: { language, deviceID } } : { params: { username: user, password: pass } }),
     });
-    return fetch(request)
-      .then(response => response.json())
-      .then(data => {
-        const error = data.ROOT ? data.ROOT.error : false;
-        if (!error) {
-          //this.initWebsocket(data);
-          console.log('this.initWebSocket', this.initWebSocket)
-          if (this.initWebSocket === 'YES') {
-            this.initClientWebSocket(data)
-              .then(success => {
-                if (success) {
-                  this.authenticated = {
-                    ...data,
-                    user: this.user,
-                    userId: (data.id_usuario || data.userId),
-                    username: (data.nombre_usuario || data.userId)
-                  };
-                }
-              })
-              .catch(error => alert(error))
+    return new Promise((resolve, reject) => {
+      fetch(request)
+        .then(response => response.json())
+        .then(data => {
+          const error = this.getError(data);
+          if (!error.error) {
+            if (this.initWebSocket === 'YES') {
+              this.initClientWebSocket(data)
+                .then(success => {
+                  if (success) {
+                    this.authenticated = {
+                      ...data,
+                      user: this.user,
+                      userId: (data.id_usuario || data.userId),
+                      username: (data.nombre_usuario || data.userId)
+                    };
+                  }
+                })
+                .catch(error => alert(error))
+            } else {
+              this.authenticated = {
+                ...data,
+                user: this.user,
+                userId: (data.id_usuario || data.userId),
+                username: (data.nombre_usuario || data.username)
+              };
+            }
+            return { ...data, user };
           } else {
-            this.authenticated = {
-              ...data,
-              user: this.user,
-              userId: (data.id_usuario || data.userId),
-              username: (data.nombre_usuario || data.username)
-            };
+            reject(error);
           }
-
-        }
-        return { ...data, user };
-      })
-      .catch(err => console.log('error', err));
+        })
+        .catch(err => console.log('error', err));
+    });
   }
 
   oauthLogin(userId, token, name, surname, email, urlPhoto, type, device, language = '') {
@@ -477,8 +492,6 @@ class PXPClient {
     return new Promise((resolve, reject) => {
       fetch(request)
         .then(response => {
-          console.log('[FETCH]', response);
-          error = !response.ok;
           if (response.status === 401) {
             this.sessionDied = true;
             this.authenticated = false;
@@ -486,14 +499,11 @@ class PXPClient {
           return response.json();
         })
         .then(data => {
-          if (error && !data.error) {
-            reject(data);
+          const error = this.getError(data);
+          console.log(error);
+          if (error.error) {
+            reject(error);
           }
-
-          if ((data && data.error)) {
-            reject(data.error);
-          }
-
           if (data && data.ROOT) {
             resolve({
               error: data.ROOT.error,
@@ -513,7 +523,6 @@ class PXPClient {
           }
         })
         .catch(err => {
-          console.log('error', err)
           reject(err);
         });
     });

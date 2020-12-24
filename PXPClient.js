@@ -394,15 +394,15 @@ class PXPClient {
             this.initClientWebSocket(data)
               .then(success => {
                 if (success) {
-                  this.authenticated = { ...data, ...{ user: email } };
+                  this.authenticated = { ...data, ...{ user: email, userId: data.id_usuario } };
                 }
               })
               .catch(error => alert(error))
           } else {
-            this.authenticated = { ...data, ...{ user: email } };
+            this.authenticated = { ...data, ...{ user: email, userId: data.id_usuario } };
           }
         }
-        return { ...data, ...{ user: email } };
+        return { ...data, ...{ user: email, userId: data.id_usuario } };
       })
       .catch(err => console.log('error', err));
   }

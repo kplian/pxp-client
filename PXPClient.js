@@ -223,7 +223,7 @@ class PXPClient {
     return PXPClient.instance;
   }
 
-  init(host, baseUrl = 'rest/', mode = 'same-origin', port = '80', protocol = 'http', backendRestVersion = '2', initWebSocket = 'NO', portWs = '8010', backendVersion = 'v1') {
+  init(host, baseUrl = 'rest/', mode = 'same-origin', port = '80', protocol = 'http', backendRestVersion = '2', initWebSocket = 'NO', portWs = '8010', backendVersion = 'v1', urlLogin = 'auth/login') {
     this.host = host;
     this.baseUrl = baseUrl;
     this.session = baseUrl;
@@ -231,6 +231,7 @@ class PXPClient {
     this.protocol = protocol;
     this.mode = mode;
     this.backendRestVersion = backendRestVersion;
+    this.urlLogin = urlLogin;
     this.sessionDied = false;
     this._authenticated = localStorage.aut ? JSON.parse(localStorage.aut) : false;
     this.authenticatedListener = (val) => { };
@@ -314,7 +315,7 @@ class PXPClient {
 
 
     const request = this.request({
-      url: this.backendVersion === 'v1' ? 'seguridad/Auten/verificarCredenciales' : 'auth/login',
+      url: this.backendVersion === 'v1' ? 'seguridad/Auten/verificarCredenciales' : this.urlLogin,
       ...(this.backendVersion === 'v1' ? {
         headers: {
           'Pxp-user': this.user,

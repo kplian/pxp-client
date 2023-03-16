@@ -510,6 +510,7 @@ class PXPClient {
               error: data.ROOT.error,
               detail: data.ROOT.detalle ? {
                 message: data.ROOT.detalle.mensaje,
+                archivo_generado: data.ROOT.detalle.archivo_generado || undefined,
                 tecMessage: data.ROOT.detalle.mensaje_tec || undefined,
                 origin: data.ROOT.detalle.origen || undefined,
                 procedure: data.ROOT.detalle.procedimiento || undefined,

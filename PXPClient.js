@@ -223,7 +223,7 @@ class PXPClient {
     return PXPClient.instance;
   }
 
-  init(host, baseUrl = 'rest/', mode = 'same-origin', port = '80', protocol = 'http', backendRestVersion = '2', initWebSocket = 'NO', portWs = '8010', backendVersion = 'v1', urlLogin = 'auth/login') {
+  init(host, baseUrl = 'rest/', mode = 'same-origin', port = '80', protocol = 'http', backendRestVersion = '2', initWebSocket = 'NO', portWs = '8010', backendVersion = 'v1', urlLogin = 'auth/login', storeToken = false) {
     this.host = host;
     this.baseUrl = baseUrl;
     this.session = baseUrl;
@@ -239,6 +239,8 @@ class PXPClient {
     this.portWs = portWs;
     this.eventsWs = {};
     this.backendVersion = backendVersion; // this is for see if is php pxp version or node pxp version
+    this.storeToken = storeToken;
+    this.headerToken = {};
 
 
     this.onCloseWebSocketListener = (val) => { };
@@ -313,6 +315,14 @@ class PXPClient {
       encrypted = enc.encrypt(this.prefix + '$$' + this.user, md5Pass);
     }
 
+    if(this.storeToken) {
+      this.headerToken = {
+        'Pxp-user': this.user,
+        'auth-version': this.backendRestVersion,
+        'Php-Auth-User': encrypted,
+      }
+    }
+
 
     const request = this.request({
       url: this.backendVersion === 'v1' ? 'seguridad/Auten/verificarCredenciales' : this.urlLogin,
@@ -345,7 +355,7 @@ class PXPClient {
                       ...data,
                       user: this.user,
                       userId: (data.id_usuario || data.userId),
-                      username: (data.nombre_usuario || data.userId)
+                      username: (data.nombre_usuario || data.userId),
                     };
                   }
                 })
@@ -355,7 +365,7 @@ class PXPClient {
                 ...data,
                 user: this.user,
                 userId: (data.id_usuario || data.userId),
-                username: (data.nombre_usuario || data.username)
+                username: (data.nombre_usuario || data.username),
               };
             }
             return { ...data, user };
@@ -467,6 +477,7 @@ class PXPClient {
     if (obj.method === 'GET') {
       urlRequest = `${urlRequest}?${params}`;
     }
+    console.log('this.headerToken',this.headerToken)
     return new Request(
       urlRequest,
       {
@@ -474,6 +485,7 @@ class PXPClient {
         mode: this.mode,
         ...(obj.type !== 'upload' && {
           headers: {
+            ...this.headerToken,
             ...headers,
             ...(this.backendVersion === 'v2' && { 'Content-Type': 'application/json' }),
             ...(this.backendVersion === 'v1' && { 'content-Type': 'application/x-www-form-urlencoded; charset=UTF-8' }),
